@@ -1,0 +1,13 @@
+{
+    "USER_ROLE": "UPDATE user_role SET roleName = ?, description = ?, lastModifiedById = ? WHERE id = ?",
+    "USER": "UPDATE user SET password = ?, userRoleId = ?, lastModifiedById = ? WHERE id = ?",
+    "ACCOUNT-TYPE": "UPDATE account_type SET accountTypeName = ?, description = ?, lastModifiedById = ? WHERE id = ?",
+    "TRANSACTION-TYPE": "UPDATE transaction_type SET displayName = ?, lastModifiedById = ? WHERE id = ?",
+    "TENANT": "UPDATE tenant SET tenantName = ?, lastModifiedById = ? WHERE id = ?",
+    "BANK": "UPDATE bank SET name = ?, externalId = ?, lastModifiedById = ? WHERE id = ?",
+    "ACCOUNT": "UPDATE account SET displayName = ?, lastModifiedById = ? WHERE id = ?",
+    "CATEGORY-TYPE": "UPDATE category_type SET categoryTypeName = ? WHERE id = ?",
+    "CATEGORY": "UPDATE category SET categoryTypeId = ?, categoryName = ?, lastModifiedById = ? WHERE id = ?",
+    "SUBCATEGORY": "UPDATE subcategory SET subcategoryName = ?, categoryId = ?, lastModifiedById = ? WHERE id = ?",
+    "PAYEE": "UPDATE payee SET payeeName = ?, defaultSubCategoryId = ?, lastModifiedById = ? WHERE id = ?"
+}

@@ -1,0 +1,60 @@
+user_roles
+  id int pk
+  roleName varchar(20)
+  description varchar(20)
+
+user
+  id int pk
+  userid varchar(20)
+  password varchar(20)
+  userRoleId -> user_roles(id)
+
+tenant
+  id int pk
+  tenantName varchar(20)
+  createdAt timestamp=`now()`
+  createdById -> user(id)
+  lastModifiedAt timestamp=`now()`
+  lastModifiedById -> user(id)
+
+tenant_user_mapping
+  tenantId -> tenant(id)
+  userId -> user(id)
+
+account_type
+  id int pk
+  accountTypeName varchar(20)
+  description varchar(20)
+
+bank
+  id int pk
+  name varchar(50)
+  externalId varchar(20)
+
+account
+  id int pk
+  accountTypeId -> account_type(id)
+  tenantId -> tenant(id)
+  bankId -> bank(id)
+
+transaction_type
+  id int pk
+  displayName varchar(20)
+  createdAt timestamp=`now()`
+  createdById -> user(id)
+  lastModifiedAt timestamp=`now()`
+  lastModifiedById -> user(id)
+
+Transaction
+  id int pk
+  accountId -> account(id)
+  typeId -> transaction_type(id)
+  transactionAmount number
+  transactionDate timestamp
+  manualEntry 
+  createdAt timestamp=`now()`
+  createdById -> user(id)
+  lastModifiedAt timestamp=`now()`
+  lastModifiedById -> user(id)
+
+

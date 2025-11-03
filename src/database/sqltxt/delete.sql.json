@@ -1,0 +1,13 @@
+{
+    "USER-ROLE": "DELETE FROM user_role WHERE id = ?",
+    "USER": "DELETE FROM user WHERE id = ?",
+    "ACCOUNT-TYPE": "DELETE FROM account_type WHERE id = ?",
+    "TRANSACTION-TYPE": "DELETE FROM transaction_type WHERE id = ?",
+    "TENANT": "DELETE FROM tenant WHERE id = ?",
+    "BANK": "DELETE FROM bank WHERE id = ?",
+    "ACCOUNT": "DELETE FROM account WHERE id = ?",
+    "CATEGORY-TYPE": "DELETE FROM category_type WHERE id = ?",
+    "CATEGORY": "DELETE FROM category WHERE id = ?",
+    "SUBCATEGORY": "DELETE FROM subcategory WHERE id = ?",
+    "PAYEE": "DELETE FROM payee WHERE id = ?"
+}
