@@ -32,8 +32,7 @@ const ADMINDBTAG: string = 'DB Routes'
 @Controller('api')
 export class DBController {
     constructor (
-        private mysqlService: MysqlService,
-        @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger
+        private mysqlService: MysqlService
     ) {}
 
     /************************************************************/

@@ -1,11 +1,25 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
-import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
+import { WinstonModule } from 'nest-winston';
+import * as winston from 'winston';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-  app.useLogger(app.get(WINSTON_MODULE_PROVIDER));
+  const app = await NestFactory.create(AppModule, {
+    logger: WinstonModule.createLogger({
+      level: 'debug',
+      format: winston.format.json(),
+      defaultMeta: {
+        service: 'MyMoney-bff',
+        environment: process.env.NODE_ENV || 'dev'
+      },
+      transports: [
+        new winston.transports.Console()
+      ]
+    })
+  }
+  );
+
   
   const config = new DocumentBuilder()
     .setTitle('Money APIs')
