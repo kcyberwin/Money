@@ -1,15 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-export class TenantDto {
+export class PayeeMappingDto {
   @ApiProperty({ required: false, readOnly: true })
   id: number;
 
   @ApiProperty({ required: true })
-  tenantName: string;
+  payeeImportName: string;
 
   @ApiProperty({ required: true })
-  createdById: number;
-
-  @ApiProperty({ required: true })
-  lastModifiedById: number;
+  mappedPayeeId: number;
 }

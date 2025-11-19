@@ -1,19 +1,18 @@
-import { ApiProperty } from "@nestjs/swagger";
+import { ApiProperty } from '@nestjs/swagger';
 
 export class AccountTypeDto {
-    @ApiProperty()
-    id: number;
+  @ApiProperty()
+  id: number;
 
-    @ApiProperty()
-    accountTypeName: string;
+  @ApiProperty()
+  accountTypeName: string;
 
-    @ApiProperty()
-    description: string;
-    
-    @ApiProperty()
-    createdById: number;
+  @ApiProperty()
+  description: string;
 
-    @ApiProperty()
-    lastModifiedById: number;
+  @ApiProperty()
+  createdById: number;
 
+  @ApiProperty()
+  lastModifiedById: number;
 }

@@ -2,13 +2,14 @@
     "USER-ROLE": "INSERT INTO user_role (roleName, description, createdById, lastModifiedById) VALUES (?, ?, ?, ?)",
     "USER": "INSERT INTO user (userName, password, userRoleId, createdById, lastModifiedById) VALUES (?, ?, ?, ?, ?)",
     "ACCOUNT-TYPE": "INSERT INTO account_type (accountTypeName, description, createdById, lastModifiedById) VALUES(?, ?, ?, ?)",
-    "TRANSACTION-TYPE": "INSERT INTO transaction_type (displayName, createdById, lastModifiedById) VALUES(?, ?, ?)",
+    "TRANSACTION-TYPE": "INSERT INTO transaction_type (displayName, importName, accountTypeId, createdById, lastModifiedById) VALUES(?, ?, ?, ?, ?)",
     "TENANT": "INSERT INTO tenant (tenantName, createdById, lastModifiedById) VALUES(?, ?, ?)",
-    "BANK": "INSERT INTO bank (name, externalId, createdById, lastModifiedById) VALUES(?, ?, ?, ?)",
-    "ACCOUNT": "INSERT INTO account (displayName, accountTypeId, tenantId, bankId, createdById, lastModifiedById) VALUES (?, ?, ?, ?, ?, ?)",
+    "BANK": "INSERT INTO bank (name, externalOrg, externalId, createdById, lastModifiedById) VALUES(?, ?, ?, ?, ?)",
+    "ACCOUNT": "INSERT INTO account (accountNum, accountTypeId, tenantId, bankId, createdById, lastModifiedById) VALUES (?, ?, ?, ?, ?, ?, ?)",
     "CATEGORY-TYPE": "INSERT INTO category_type (categoryTypeName, createdById, lastModifiedById) VALUES (?, ?, ?)",
     "CATEGORY": "INSERT INTO category (categoryTypeId, categoryName, createdById, lastModifiedById) VALUES (?, ?, ?, ?)",
     "SUBCATEGORY": "INSERT INTO subcategory (subcategoryName, categoryId, createdById, lastModifiedById) VALUES (?, ?, ?, ?)",
     "PAYEE": "INSERT INTO payee (payeeName, defaultSubCategoryId, createdById, lastModifiedById) VALUES (?, ?, ?, ?)",
-    "IMPORT-TRASACTION": "INSERT INTO transaction (tenantId, typeId, transactionAmount, transactionDate, payeeId, reconciled, categoryId, subCategoryId, createdById, lastModifiedById) SELECT ?, tt.id, ?, ?, p.id, ?, c.id, sc.id, u.id, u.id FROM transaction_type tt JOIN payee as p ON p.payeeName = ? JOIN subcategory as sc ON sc.id = p.defaultSubCategoryId JOIN category as c ON sc.categoryId = c.id JOIN user as u on u.username = ? WHERE tt.displayName = ?"
+    "PAYEE-MAP": "INSERT INTO payee_import_map (payeeImportName, mappedPayeeId) VALUES (?, ?)",
+    "TRANSACTION-IMPORT": "INSERT INTO transaction (tenantId, typeId, transactionAmount, transactionDate, payeeId, reconciled, categoryId, subCategoryId, createdById, lastModifiedById) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 } 
