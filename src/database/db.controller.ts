@@ -1,12 +1,18 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Inject } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiParam } from '@nestjs/swagger';
-import { MysqlService } from './mysql/mysql.service';
-import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
-import { Logger } from 'winston';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Logger,
+} from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBody, ApiParam } from '@nestjs/swagger';
+import { DatabaseService } from './db.service';
 
 //DTOs
 import { UserRoleDto } from './dto/useRole.dto';
-import { DbModifyResult } from './dto/dbRowModify.dto';
 import { AccountTypeDto } from './dto/accountType.dto';
 import { UserDto } from './dto/user.dto';
 import { TransactionTypeDto } from './dto/transactionType.dto';
@@ -17,526 +23,566 @@ import { CategoryTypeDto } from './dto/categoryType.dto';
 import { CategoryDto } from './dto/category.dto';
 import { SubCategoryDto } from './dto/subcategory.dto';
 import { PayeeDto } from './dto/payee.dto';
-import { CreateTransactionDto } from './dto/createTransaction.dto';
+import { PayeeMappingDto } from './dto/payeeMapping.dto';
 
-//SQL Text consts
-import * as SELECTTXT from './sqltxt/select.sql.json';
-import * as INSERTTXT from './sqltxt/insert.sql.json';
-import * as UPDATETXT from './sqltxt/update.sql.json';
-import * as DELTXT from './sqltxt/delete.sql.json';
-
-
-const ADMINDBTAG: string = 'DB Routes'
+const ADMINDBTAG: string = 'DB Routes';
 
 @ApiTags('All DB Routes')
 @Controller('api')
 export class DBController {
-    constructor (
-        private mysqlService: MysqlService
-    ) {}
+  constructor(
+    private databaseService: DatabaseService,
+    private logger: Logger,
+  ) {}
 
-    /************************************************************/
-    /* user-roles                                               */
-    /************************************************************/
-    @Get('user-roles')
-    @ApiOperation({ summary: 'Get all User Roles' })
-    @ApiTags(`${ADMINDBTAG}:user-role`)
-    async getUserRoles(): Promise<UserRoleDto[]> {
-        return <UserRoleDto[]> await this.mysqlService.findAll(SELECTTXT['USER-ROLES'], []);
-    }
-    
-    @Get('user-role/:id')
-    @ApiOperation( { summary: 'Get User Role by ID'})
-    @ApiTags(`${ADMINDBTAG}:user-role`)
-    @ApiParam({ name: 'id', description: 'ID of User Role to find' })
-    async getUserRole(@Param('id') id: number): Promise<UserRoleDto> {
-        const result: UserRoleDto[] = <UserRoleDto[]> await this.mysqlService.findOneById(SELECTTXT['USER-ROLE'], id);
-        return result[0];
-    }
-    
+  /************************************************************/
+  /* user-roles                                               */
+  /************************************************************/
+  @Get('user-roles')
+  @ApiOperation({ summary: 'Get all User Roles' })
+  @ApiTags(`${ADMINDBTAG}:user-role`)
+  async getUserRoles(): Promise<UserRoleDto[]> {
+    return await this.databaseService.getAllUserRoles();
+  }
 
-    @Post('user-role')
-    @ApiOperation({ summary: 'Post new User Role' })
-    @ApiTags(`${ADMINDBTAG}:user-role`)
-    @ApiBody({ type: UserRoleDto })
-    async postUserRole(@Body() createUserRoleDto: UserRoleDto): Promise<DbModifyResult> {
-        return <DbModifyResult> await this.mysqlService.insertOne(INSERTTXT['USER-ROLE'], [createUserRoleDto.roleName, createUserRoleDto.description, createUserRoleDto.createdById, createUserRoleDto.lastModifiedById]);
-    }
+  @Get('user-role/:id')
+  @ApiOperation({ summary: 'Get User Role by ID' })
+  @ApiTags(`${ADMINDBTAG}:user-role`)
+  @ApiParam({ name: 'id', description: 'ID of User Role to find' })
+  async getUserRole(@Param('id') id: number): Promise<UserRoleDto> {
+    return this.databaseService.getUserRoleById(id);
+  }
 
-    @Put('user-role')
-    @ApiOperation({ summary: 'Update existing User Role' })
-    @ApiTags(`${ADMINDBTAG}:user-role`)
-    @ApiBody({type: UserRoleDto})
-    async updateUserRole(@Body() updateUserRoleDto: UserRoleDto): Promise<DbModifyResult> {
-        return <DbModifyResult> await this.mysqlService.updateOne(UPDATETXT.USER_ROLE, [updateUserRoleDto.roleName, updateUserRoleDto.description, updateUserRoleDto.lastModifiedById, updateUserRoleDto.id]);
-    }
+  @Post('user-role')
+  @ApiOperation({ summary: 'Post new User Role' })
+  @ApiTags(`${ADMINDBTAG}:user-role`)
+  @ApiBody({ type: UserRoleDto })
+  async postUserRole(
+    @Body() createUserRoleDto: UserRoleDto,
+  ): Promise<UserRoleDto> {
+    return this.databaseService.insertUserRole(createUserRoleDto);
+  }
 
-    @Delete('user-role/:id')
-    @ApiOperation({ summary: 'Delete existing User Role by ID' })
-    @ApiTags(`${ADMINDBTAG}:user-role`)
-    @ApiParam({ name: 'id', description: 'ID of User Role to delete' })
-    async deleteUserRole(@Param('id') id: number): Promise<DbModifyResult> {
-        return <DbModifyResult> await this.mysqlService.deleteOne(DELTXT['USER-ROLE'], [ id ])
-    }
+  @Put('user-role')
+  @ApiOperation({ summary: 'Update existing User Role' })
+  @ApiTags(`${ADMINDBTAG}:user-role`)
+  @ApiBody({ type: UserRoleDto })
+  async updateUserRole(
+    @Body() updateUserRoleDto: UserRoleDto,
+  ): Promise<boolean> {
+    return this.databaseService.updateUserRoleById(updateUserRoleDto);
+  }
 
-    
-    /************************************************************/
-    /* user                                                     */
-    /************************************************************/
+  @Delete('user-role/:id')
+  @ApiOperation({ summary: 'Delete existing User Role by ID' })
+  @ApiTags(`${ADMINDBTAG}:user-role`)
+  @ApiParam({ name: 'id', description: 'ID of User Role to delete' })
+  async deleteUserRole(@Param('id') id: number): Promise<boolean> {
+    return this.databaseService.deleteUserRoleById(id);
+  }
 
-    @Get('users')
-    @ApiOperation({ summary: 'Get all Users'})
-    @ApiTags(`${ADMINDBTAG}:user`)
-    async getUsers(): Promise<UserDto[]> {
-        return <UserDto[]> await this.mysqlService.findAll(SELECTTXT.USERS, []);
-    }
+  /************************************************************/
+  /* user                                                     */
+  /************************************************************/
 
-    @Get('user/:id')
-    @ApiOperation({ summary: 'Get User by ID'})
-    @ApiTags(`${ADMINDBTAG}:user`)
-    @ApiParam({ name: 'id', description: 'ID of User to find' })
-    async getUser(@Param('id') id: number): Promise<UserDto> {
-        const result: UserDto[] = <UserDto[]> await this.mysqlService.findOneById(SELECTTXT.USER, id);
-        return result[0];
-    }
+  @Get('users')
+  @ApiOperation({ summary: 'Get all Users' })
+  @ApiTags(`${ADMINDBTAG}:user`)
+  async getUsers(): Promise<UserDto[]> {
+    return this.databaseService.getAllUsers();
+  }
 
-    @Post('user')
-    @ApiOperation({ summary: 'Post new User' })
-    @ApiTags(`${ADMINDBTAG}:user`)
-    @ApiBody({ type: UserDto })
-    async postUser(@Body() createUserDto: UserDto): Promise<DbModifyResult> {
-        return <DbModifyResult> await this.mysqlService.insertOne(INSERTTXT.USER, [createUserDto.userName, createUserDto.password, createUserDto.userRoleId, createUserDto.createdById, createUserDto.lastModifiedById]);
-    }
+  @Get('user/:id')
+  @ApiOperation({ summary: 'Get User by ID' })
+  @ApiTags(`${ADMINDBTAG}:user`)
+  @ApiParam({ name: 'id', description: 'ID of User to find' })
+  async getUser(@Param('id') id: number): Promise<UserDto> {
+    return this.databaseService.getUserById(id);
+  }
 
-    @Put('user')
-    @ApiOperation({ summary: 'Update existing user'})
-    @ApiTags(`${ADMINDBTAG}:user`)
-    @ApiBody({ type: UserDto })
-    async updateUser(@Body() updateUserDto: UserDto): Promise<DbModifyResult> {
-        return <DbModifyResult> await this.mysqlService.updateOne(UPDATETXT.USER, [updateUserDto.password, updateUserDto.userRoleId,  updateUserDto.lastModifiedById, updateUserDto.id]);
-    }
+  @Post('user')
+  @ApiOperation({ summary: 'Post new User' })
+  @ApiTags(`${ADMINDBTAG}:user`)
+  @ApiBody({ type: UserDto })
+  async postUser(@Body() createUserDto: UserDto): Promise<UserDto> {
+    return this.databaseService.insertUser(createUserDto);
+  }
 
-    @Delete('user/:id')
-    @ApiOperation({ summary: 'Delete existing user' })
-    @ApiTags(`${ADMINDBTAG}:user`)
-    async deleteUser(@Param('id') id: number): Promise<DbModifyResult> {
-        return <DbModifyResult> await this.mysqlService.deleteOne(DELTXT.USER, [id])
-    }
+  @Put('user')
+  @ApiOperation({ summary: 'Update existing user' })
+  @ApiTags(`${ADMINDBTAG}:user`)
+  @ApiBody({ type: UserDto })
+  async updateUser(@Body() updateUserDto: UserDto): Promise<boolean> {
+    return this.databaseService.updateUserById(updateUserDto);
+  }
 
-    /************************************************************/
-    /* account-type                                             */
-    /************************************************************/
-    @Get('account-type')
-    @ApiOperation({ summary: 'Get all account types' })
-    @ApiTags(`${ADMINDBTAG}:account-type`)
-    async getAccountTypes(): Promise<AccountTypeDto[]> {
-        return <AccountTypeDto[]> await this.mysqlService.findAll(SELECTTXT['ACCOUNT-TYPES'], []);
-    }
-    
-    @Get('account-type/:id')
-    @ApiOperation( { summary: 'Get Account Type by ID'})
-    @ApiTags(`${ADMINDBTAG}:account-type`)
-    @ApiParam({ name: 'id', description: 'ID of Account Type to find' })
-    async getAccountType(@Param('id') id: number): Promise<AccountTypeDto> {
-        const result: AccountTypeDto[] = <AccountTypeDto[]> await this.mysqlService.findOneById(SELECTTXT['ACCOUNT-TYPE'], id);
-        return result[0];
-    }
-    
+  @Delete('user/:id')
+  @ApiOperation({ summary: 'Delete existing user' })
+  @ApiTags(`${ADMINDBTAG}:user`)
+  async deleteUser(@Param('id') id: number): Promise<boolean> {
+    return this.databaseService.deleteUserById(id);
+  }
 
-    @Post('account-type')
-    @ApiOperation({ summary: 'Post new Account Type' })
-    @ApiTags(`${ADMINDBTAG}:account-type`)
-    @ApiBody({ type: AccountTypeDto })
-    async postAccountType(@Body() createAccountTypeDto: AccountTypeDto): Promise<DbModifyResult> {
-        return <DbModifyResult> await this.mysqlService.insertOne(INSERTTXT['ACCOUNT-TYPE'], [createAccountTypeDto.accountTypeName, createAccountTypeDto.description, createAccountTypeDto.createdById, createAccountTypeDto.lastModifiedById]);
-    }
+  /************************************************************/
+  /* account-type                                             */
+  /************************************************************/
+  @Get('account-type')
+  @ApiOperation({ summary: 'Get all account types' })
+  @ApiTags(`${ADMINDBTAG}:account-type`)
+  async getAccountTypes(): Promise<AccountTypeDto[]> {
+    return this.databaseService.getAllAccountTypes();
+  }
 
-    @Put('account-type')
-    @ApiOperation({ summary: 'Update existing Account Type' })
-    @ApiTags(`${ADMINDBTAG}:account-type`)
-    @ApiBody({type: AccountTypeDto})
-    async updateAccountType(@Body() updateAccountTypeDto: AccountTypeDto): Promise<DbModifyResult> {
-        return <DbModifyResult> await this.mysqlService.updateOne(UPDATETXT['ACCOUNT-TYPE'], [updateAccountTypeDto.accountTypeName, updateAccountTypeDto.description, updateAccountTypeDto.lastModifiedById, updateAccountTypeDto.id]);
-    }
+  @Get('account-type/:id')
+  @ApiOperation({ summary: 'Get Account Type by ID' })
+  @ApiTags(`${ADMINDBTAG}:account-type`)
+  @ApiParam({ name: 'id', description: 'ID of Account Type to find' })
+  async getAccountType(@Param('id') id: number): Promise<AccountTypeDto> {
+    return this.databaseService.getAccountTypeById(id);
+  }
 
-    @Delete('account-type/:id')
-    @ApiOperation({ summary: 'Delete existing Account Type by ID' })
-    @ApiTags(`${ADMINDBTAG}:account-type`)
-    @ApiParam({ name: 'id', description: 'ID of Account Type to delete' })
-    async deleteAccountType(@Param('id') id: number): Promise<DbModifyResult> {
-        return <DbModifyResult> await this.mysqlService.deleteOne(DELTXT['ACCOUNT-TYPE'], [ id ])
-    }
+  @Post('account-type')
+  @ApiOperation({ summary: 'Post new Account Type' })
+  @ApiTags(`${ADMINDBTAG}:account-type`)
+  @ApiBody({ type: AccountTypeDto })
+  async postAccountType(
+    @Body() createAccountTypeDto: AccountTypeDto,
+  ): Promise<AccountTypeDto> {
+    return this.databaseService.insertAccountType(createAccountTypeDto);
+  }
 
-    /************************************************************/
-    /* transaction-type                                             */
-    /************************************************************/
-    @Get('transaction-type')
-    @ApiOperation({ summary: 'Get all Transaction Types' })
-    @ApiTags(`${ADMINDBTAG}:transaction-type`)
-    async getTransactionTypes(): Promise<TransactionTypeDto[]> {
-        return <TransactionTypeDto[]> await this.mysqlService.findAll(SELECTTXT['TRANSACTION-TYPES'], []);
-    }
-    
-    @Get('transaction-type/:id')
-    @ApiOperation( { summary: 'Get Transaction Type by ID'})
-    @ApiTags(`${ADMINDBTAG}:transaction-type`)
-    @ApiParam({ name: 'id', description: 'ID of Transaction Type to find' })
-    async getTransactionType(@Param('id') id: number): Promise<TransactionTypeDto> {
-        const result: TransactionTypeDto[] = <TransactionTypeDto[]> await this.mysqlService.findOneById(SELECTTXT['TRANSACTION-TYPE'], id);
-        return result[0];
-    }
-    
+  @Put('account-type')
+  @ApiOperation({ summary: 'Update existing Account Type' })
+  @ApiTags(`${ADMINDBTAG}:account-type`)
+  @ApiBody({ type: AccountTypeDto })
+  async updateAccountType(
+    @Body() updateAccountTypeDto: AccountTypeDto,
+  ): Promise<boolean> {
+    return this.databaseService.updateAccountTypeById(updateAccountTypeDto);
+  }
 
-    @Post('transaction-type')
-    @ApiOperation({ summary: 'Post new Transaction Type' })
-    @ApiTags(`${ADMINDBTAG}:transaction-type`)
-    @ApiBody({ type: TransactionTypeDto })
-    async postTransactionType(@Body() createTransactionType: TransactionTypeDto): Promise<DbModifyResult> {
-        return <DbModifyResult> await this.mysqlService.insertOne(INSERTTXT['TRANSACTION-TYPE'], [createTransactionType.displayName, createTransactionType.createdById, createTransactionType.lastModifiedById]);
-    }
+  @Delete('account-type/:id')
+  @ApiOperation({ summary: 'Delete existing Account Type by ID' })
+  @ApiTags(`${ADMINDBTAG}:account-type`)
+  @ApiParam({ name: 'id', description: 'ID of Account Type to delete' })
+  async deleteAccountType(@Param('id') id: number): Promise<boolean> {
+    return this.databaseService.deleteAccountTypeById(id);
+  }
 
-    @Put('transaction-type')
-    @ApiOperation({ summary: 'Update existing Transaction Type' })
-    @ApiTags(`${ADMINDBTAG}:transaction-type`)
-    @ApiBody({type: TransactionTypeDto})
-    async updateTransactionType(@Body() updateTransactionDto: TransactionTypeDto): Promise<DbModifyResult> {
-        return <DbModifyResult> await this.mysqlService.updateOne(UPDATETXT['TRANSACTION-TYPE'], [updateTransactionDto.displayName, updateTransactionDto.lastModifiedById, updateTransactionDto.id]);
-    }
+  /************************************************************/
+  /* transaction-type                                             */
+  /************************************************************/
+  @Get('transaction-type')
+  @ApiOperation({ summary: 'Get all Transaction Types' })
+  @ApiTags(`${ADMINDBTAG}:transaction-type`)
+  async getTransactionTypes(): Promise<TransactionTypeDto[]> {
+    return this.databaseService.getAllTransactionTypes();
+  }
 
-    @Delete('transaction-type/:id')
-    @ApiOperation({ summary: 'Delete existing Transaction Type by ID' })
-    @ApiTags(`${ADMINDBTAG}:transaction-type`)
-    @ApiParam({ name: 'id', description: 'ID of Transaction Type to delete' })
-    async deleteTransactionType(@Param('id') id: number): Promise<DbModifyResult> {
-        return <DbModifyResult> await this.mysqlService.deleteOne(DELTXT['TRANSACTION-TYPE'], [ id ])
-    }
+  @Get('transaction-type/:id')
+  @ApiOperation({ summary: 'Get Transaction Type by ID' })
+  @ApiTags(`${ADMINDBTAG}:transaction-type`)
+  @ApiParam({ name: 'id', description: 'ID of Transaction Type to find' })
+  async getTransactionType(
+    @Param('id') id: number,
+  ): Promise<TransactionTypeDto> {
+    return this.databaseService.getTransactionTypeById(id);
+  }
 
-    /************************************************************/
-    /* tenant                                                   */
-    /************************************************************/
-    @Get('tenant')
-    @ApiOperation({ summary: 'Get all Tenants' })
-    @ApiTags(`${ADMINDBTAG}:tenant`)
-    async getTenants(): Promise<TenantDto[]> {
-        return <TenantDto[]> await this.mysqlService.findAll(SELECTTXT.TENANTS, []);
-    }
-    
-    @Get('tenant/:id')
-    @ApiOperation( { summary: 'Get Tenant by ID'})
-    @ApiTags(`${ADMINDBTAG}:tenant`)
-    @ApiParam({ name: 'id', description: 'ID of Tenant to find' })
-    async getTenant(@Param('id') id: number): Promise<TenantDto> {
-        const result: TenantDto[] = <TenantDto[]> await this.mysqlService.findOneById(SELECTTXT.TENANT, id);
-        return result[0];
-    }
-    
+  @Post('transaction-type')
+  @ApiOperation({ summary: 'Post new Transaction Type' })
+  @ApiTags(`${ADMINDBTAG}:transaction-type`)
+  @ApiBody({ type: TransactionTypeDto })
+  async postTransactionType(
+    @Body() createTransactionTypeDto: TransactionTypeDto,
+  ): Promise<TransactionTypeDto> {
+    return this.databaseService.insertTransactionType(createTransactionTypeDto);
+  }
 
-    @Post('tenant')
-    @ApiOperation({ summary: 'Post new Tenant' })
-    @ApiTags(`${ADMINDBTAG}:tenant`)
-    @ApiBody({ type: TenantDto })
-    async postTenant(@Body() createTenantDto: TenantDto): Promise<DbModifyResult> {
-        return <DbModifyResult> await this.mysqlService.insertOne(INSERTTXT.TENANT, [createTenantDto.tenantName, createTenantDto.createdById, createTenantDto.lastModifiedById]);
-    }
+  @Put('transaction-type')
+  @ApiOperation({ summary: 'Update existing Transaction Type' })
+  @ApiTags(`${ADMINDBTAG}:transaction-type`)
+  @ApiBody({ type: TransactionTypeDto })
+  async updateTransactionType(
+    @Body() updateTransactionTypeDto: TransactionTypeDto,
+  ): Promise<boolean> {
+    return this.databaseService.updateTransactionTypeById(
+      updateTransactionTypeDto,
+    );
+  }
 
-    @Put('tenant')
-    @ApiOperation({ summary: 'Update existing Tenant' })
-    @ApiTags(`${ADMINDBTAG}:tenant`)
-    @ApiBody({type: TenantDto})
-    async updateTenant(@Body() updateTenantDto: TenantDto): Promise<DbModifyResult> {
-        return <DbModifyResult> await this.mysqlService.updateOne(UPDATETXT.TENANT, [updateTenantDto.tenantName, updateTenantDto.lastModifiedById, updateTenantDto.id]);
-    }
+  @Delete('transaction-type/:id')
+  @ApiOperation({ summary: 'Delete existing Transaction Type by ID' })
+  @ApiTags(`${ADMINDBTAG}:transaction-type`)
+  @ApiParam({ name: 'id', description: 'ID of Transaction Type to delete' })
+  async deleteTransactionType(@Param('id') id: number): Promise<boolean> {
+    return this.databaseService.deleteTransactionTypeById(id);
+  }
 
-    @Delete('tenant/:id')
-    @ApiOperation({ summary: 'Delete existing Tenant by ID' })
-    @ApiTags(`${ADMINDBTAG}:tenant`)
-    @ApiParam({ name: 'id', description: 'ID of Tenant to delete' })
-    async deleteTenant(@Param('id') id: number): Promise<DbModifyResult> {
-        return <DbModifyResult> await this.mysqlService.deleteOne(DELTXT.TENANT, [ id ])
-    }
+  /************************************************************/
+  /* tenant                                                   */
+  /************************************************************/
+  @Get('tenant')
+  @ApiOperation({ summary: 'Get all Tenants' })
+  @ApiTags(`${ADMINDBTAG}:tenant`)
+  async getTenants(): Promise<TenantDto[]> {
+    return this.databaseService.getAllTenants();
+  }
 
-    /************************************************************/
-    /* bank                                                   */
-    /************************************************************/
-    @Get('bank')
-    @ApiOperation({ summary: 'Get all banks' })
-    @ApiTags(`${ADMINDBTAG}:bank`)
-    async getBanks(): Promise<BankDto[]> {
-        return <BankDto[]> await this.mysqlService.findAll(SELECTTXT.BANKS, []);
-    }
-    
-    @Get('bank/:id')
-    @ApiOperation( { summary: 'Get Bank by ID'})
-    @ApiTags(`${ADMINDBTAG}:bank`)
-    @ApiParam({ name: 'id', description: 'ID of Bank to find' })
-    async getBank(@Param('id') id: number): Promise<BankDto> {
-        const result: BankDto[] = <BankDto[]> await this.mysqlService.findOneById(SELECTTXT.BANK, id);
-        return result[0];
-    }
-    
+  @Get('tenant/:id')
+  @ApiOperation({ summary: 'Get Tenant by ID' })
+  @ApiTags(`${ADMINDBTAG}:tenant`)
+  @ApiParam({ name: 'id', description: 'ID of Tenant to find' })
+  async getTenant(@Param('id') id: number): Promise<TenantDto> {
+    return this.databaseService.getTenantById(id);
+  }
 
-    @Post('bank')
-    @ApiOperation({ summary: 'Post new Bank' })
-    @ApiTags(`${ADMINDBTAG}:bank`)
-    @ApiBody({ type: BankDto })
-    async postBank(@Body() createBankDto: BankDto): Promise<DbModifyResult> {
-        return <DbModifyResult> await this.mysqlService.insertOne(INSERTTXT.BANK, [createBankDto.name, createBankDto.externalId, createBankDto.createdById, createBankDto.lastModifiedById]);
-    }
+  @Post('tenant')
+  @ApiOperation({ summary: 'Post new Tenant' })
+  @ApiTags(`${ADMINDBTAG}:tenant`)
+  @ApiBody({ type: TenantDto })
+  async postTenant(@Body() createTenantDto: TenantDto): Promise<TenantDto> {
+    return this.databaseService.insertTenant(createTenantDto);
+  }
 
-    @Put('bank')
-    @ApiOperation({ summary: 'Update existing Bank' })
-    @ApiTags(`${ADMINDBTAG}:bank`)
-    @ApiBody({type: BankDto})
-    async updateBank(@Body() updateBankDto: BankDto): Promise<DbModifyResult> {
-        return <DbModifyResult> await this.mysqlService.updateOne(UPDATETXT.BANK, [updateBankDto.name, updateBankDto.externalId, updateBankDto.lastModifiedById, updateBankDto.id]);
-    }
+  @Put('tenant')
+  @ApiOperation({ summary: 'Update existing Tenant' })
+  @ApiTags(`${ADMINDBTAG}:tenant`)
+  @ApiBody({ type: TenantDto })
+  async updateTenant(@Body() updateTenantDto: TenantDto): Promise<boolean> {
+    return this.databaseService.updateTenantById(updateTenantDto);
+  }
 
-    @Delete('bank/:id')
-    @ApiOperation({ summary: 'Delete existing Bank by ID' })
-    @ApiTags(`${ADMINDBTAG}:bank`)
-    @ApiParam({ name: 'id', description: 'ID of Bank to delete' })
-    async deleteBank(@Param('id') id: number): Promise<DbModifyResult> {
-        return <DbModifyResult> await this.mysqlService.deleteOne(DELTXT.BANK, [ id ])
-    }
+  @Delete('tenant/:id')
+  @ApiOperation({ summary: 'Delete existing Tenant by ID' })
+  @ApiTags(`${ADMINDBTAG}:tenant`)
+  @ApiParam({ name: 'id', description: 'ID of Tenant to delete' })
+  async deleteTenant(@Param('id') id: number): Promise<boolean> {
+    return this.databaseService.deleteTenantById(id);
+  }
 
-    /************************************************************/
-    /* account                                                  */
-    /************************************************************/
-    @Get('account')
-    @ApiOperation({ summary: 'Get all Accounts' })
-    @ApiTags(`${ADMINDBTAG}:account`)
-    async getAccounts(): Promise<AccountDto[]> {
-        return <AccountDto[]> await this.mysqlService.findAll(SELECTTXT.ACCOUNTS, []);
-    }
-    
-    @Get('account/:id')
-    @ApiOperation( { summary: 'Get Account by ID'})
-    @ApiTags(`${ADMINDBTAG}:account`)
-    @ApiParam({ name: 'id', description: 'ID of Account to find' })
-    async getAccount(@Param('id') id: number): Promise<AccountDto> {
-        const result: AccountDto[] = <AccountDto[]> await this.mysqlService.findOneById(SELECTTXT.ACCOUNT, id);
-        return result[0];
-    }
-    
+  /************************************************************/
+  /* bank                                                   */
+  /************************************************************/
+  @Get('bank')
+  @ApiOperation({ summary: 'Get all banks' })
+  @ApiTags(`${ADMINDBTAG}:bank`)
+  async getBanks(): Promise<BankDto[]> {
+    return this.databaseService.getAllBanks();
+  }
 
-    @Post('account')
-    @ApiOperation({ summary: 'Post new Account' })
-    @ApiTags(`${ADMINDBTAG}:account`)
-    @ApiBody({ type: AccountDto })
-    async postAccount(@Body() createAccountDto: AccountDto): Promise<DbModifyResult> {
-        return <DbModifyResult> await this.mysqlService.insertOne(INSERTTXT.ACCOUNT, [createAccountDto.displayName, createAccountDto.accountTypeId, createAccountDto.tenantId, createAccountDto.bankId, createAccountDto.createdById, createAccountDto.lastModifiedById]);
-    }
+  @Get('bank/:id')
+  @ApiOperation({ summary: 'Get Bank by ID' })
+  @ApiTags(`${ADMINDBTAG}:bank`)
+  @ApiParam({ name: 'id', description: 'ID of Bank to find' })
+  async getBank(@Param('id') id: number): Promise<BankDto> {
+    return this.databaseService.getBankById(id);
+  }
 
-    @Put('account')
-    @ApiOperation({ summary: 'Update existing Account' })
-    @ApiTags(`${ADMINDBTAG}:account`)
-    @ApiBody({type: AccountDto})
-    async updateAccount(@Body() updateAccountDto: AccountDto): Promise<DbModifyResult> {
-        return <DbModifyResult> await this.mysqlService.updateOne(UPDATETXT.ACCOUNT, [updateAccountDto.displayName, updateAccountDto.lastModifiedById, updateAccountDto.id]);
-    }
+  @Post('bank')
+  @ApiOperation({ summary: 'Post new Bank' })
+  @ApiTags(`${ADMINDBTAG}:bank`)
+  @ApiBody({ type: BankDto })
+  async postBank(@Body() createBankDto: BankDto): Promise<BankDto> {
+    return this.databaseService.insertBank(createBankDto);
+  }
 
-    @Delete('account/:id')
-    @ApiOperation({ summary: 'Delete existing Account by ID' })
-    @ApiTags(`${ADMINDBTAG}:account`)
-    @ApiParam({ name: 'id', description: 'ID of Account to delete' })
-    async deleteAccount(@Param('id') id: number): Promise<DbModifyResult> {
-        return <DbModifyResult> await this.mysqlService.deleteOne(DELTXT.ACCOUNT, [ id ])
-    }
+  @Put('bank')
+  @ApiOperation({ summary: 'Update existing Bank' })
+  @ApiTags(`${ADMINDBTAG}:bank`)
+  @ApiBody({ type: BankDto })
+  async updateBank(@Body() updateBankDto: BankDto): Promise<boolean> {
+    return this.databaseService.updateBankById(updateBankDto);
+  }
 
-    /************************************************************/
-    /* category-type                                            */
-    /************************************************************/
-    @Get('category-type')
-    @ApiOperation({ summary: 'Get all Category Types' })
-    @ApiTags(`${ADMINDBTAG}:category-type`)
-    async getCatTypes(): Promise<CategoryTypeDto[]> {
-        return <CategoryTypeDto[]> await this.mysqlService.findAll(SELECTTXT['CATEGORY-TYPES'], []);
-    }
-    
-    @Get('category-type/:id')
-    @ApiOperation( { summary: 'Get Category Type by ID'})
-    @ApiTags(`${ADMINDBTAG}:category-type`)
-    @ApiParam({ name: 'id', description: 'ID of Category Type to find' })
-    async getCatType(@Param('id') id: number): Promise<CategoryTypeDto> {
-        const result: CategoryTypeDto[] = <CategoryTypeDto[]> await this.mysqlService.findOneById(SELECTTXT['CATEGORY-TYPE'], id);
-        return result[0];
-    }
-    
+  @Delete('bank/:id')
+  @ApiOperation({ summary: 'Delete existing Bank by ID' })
+  @ApiTags(`${ADMINDBTAG}:bank`)
+  @ApiParam({ name: 'id', description: 'ID of Bank to delete' })
+  async deleteBank(@Param('id') id: number): Promise<boolean> {
+    return this.databaseService.deleteBankById(id);
+  }
 
-    @Post('category-type')
-    @ApiOperation({ summary: 'Post new Category Type' })
-    @ApiTags(`${ADMINDBTAG}:category-type`)
-    @ApiBody({ type: CategoryTypeDto })
-    async postCatType(@Body() createCatType: CategoryTypeDto): Promise<DbModifyResult> {
-        return <DbModifyResult> await this.mysqlService.insertOne(INSERTTXT['CATEGORY-TYPE'], [createCatType.categoryTypeName,  createCatType.createdById, createCatType.lastModifiedById]);
-    }
+  /************************************************************/
+  /* account                                                  */
+  /************************************************************/
+  @Get('account')
+  @ApiOperation({ summary: 'Get all Accounts' })
+  @ApiTags(`${ADMINDBTAG}:account`)
+  async getAccounts(): Promise<AccountDto[]> {
+    return this.databaseService.getAllAccounts();
+  }
 
-    @Put('category-type')
-    @ApiOperation({ summary: 'Update existing Category Type' })
-    @ApiTags(`${ADMINDBTAG}:category-type`)
-    @ApiBody({type: CategoryTypeDto})
-    async updateCatType(@Body() updateCatType: CategoryTypeDto): Promise<DbModifyResult> {
-        return <DbModifyResult> await this.mysqlService.updateOne(UPDATETXT['CATEGORY-TYPE'], [updateCatType.categoryTypeName, updateCatType.lastModifiedById, updateCatType.id]);
-    }
+  @Get('account/:id')
+  @ApiOperation({ summary: 'Get Account by ID' })
+  @ApiTags(`${ADMINDBTAG}:account`)
+  @ApiParam({ name: 'id', description: 'ID of Account to find' })
+  async getAccount(@Param('id') id: number): Promise<AccountDto> {
+    return this.databaseService.getAccountById(id);
+  }
 
-    @Delete('category-type/:id')
-    @ApiOperation({ summary: 'Delete existing Category Type by ID' })
-    @ApiTags(`${ADMINDBTAG}:category-type`)
-    @ApiParam({ name: 'id', description: 'ID of Category Type to delete' })
-    async deleteCatType(@Param('id') id: number): Promise<DbModifyResult> {
-        return <DbModifyResult> await this.mysqlService.deleteOne(DELTXT['CATEGORY-TYPE'], [ id ])
-    }
+  @Post('account')
+  @ApiOperation({ summary: 'Post new Account' })
+  @ApiTags(`${ADMINDBTAG}:account`)
+  @ApiBody({ type: AccountDto })
+  async postAccount(@Body() createAccountDto: AccountDto): Promise<AccountDto> {
+    return this.databaseService.insertAccount(createAccountDto);
+  }
 
-    /************************************************************/
-    /* category                                            */
-    /************************************************************/
-    @Get('category')
-    @ApiOperation({ summary: 'Get all Categories' })
-    @ApiTags(`${ADMINDBTAG}:category`)
-    async getCats(): Promise<CategoryDto[]> {
-        return <CategoryDto[]> await this.mysqlService.findAll(SELECTTXT.CATEGORIES, []);
-    }
-    
-    @Get('category/:id')
-    @ApiOperation( { summary: 'Get Category by ID'})
-    @ApiTags(`${ADMINDBTAG}:category`)
-    @ApiParam({ name: 'id', description: 'ID of Category to find' })
-    async getCat(@Param('id') id: number): Promise<CategoryDto> {
-        const result: CategoryDto[] = <CategoryDto[]> await this.mysqlService.findOneById(SELECTTXT.CATEGORY, id);
-        return result[0];
-    }
-    
+  @Put('account')
+  @ApiOperation({ summary: 'Update existing Account' })
+  @ApiTags(`${ADMINDBTAG}:account`)
+  @ApiBody({ type: AccountDto })
+  async updateAccount(@Body() updateAccountDto: AccountDto): Promise<boolean> {
+    return this.databaseService.updateAccountById(updateAccountDto);
+  }
 
-    @Post('category')
-    @ApiOperation({ summary: 'Post new Category' })
-    @ApiTags(`${ADMINDBTAG}:category`)
-    @ApiBody({ type: CategoryDto })
-    async postCat(@Body() createCat: CategoryDto): Promise<DbModifyResult> {
-        return <DbModifyResult> await this.mysqlService.insertOne(INSERTTXT.CATEGORY, [createCat.categoryTypeId, createCat.categoryName, createCat.createdById, createCat.lastModifiedById]);
-    }
+  @Delete('account/:id')
+  @ApiOperation({ summary: 'Delete existing Account by ID' })
+  @ApiTags(`${ADMINDBTAG}:account`)
+  @ApiParam({ name: 'id', description: 'ID of Account to delete' })
+  async deleteAccount(@Param('id') id: number): Promise<boolean> {
+    return this.databaseService.deleteAccountById(id);
+  }
 
-    @Put('category')
-    @ApiOperation({ summary: 'Update existing Category' })
-    @ApiTags(`${ADMINDBTAG}:category`)
-    @ApiBody({type: CategoryDto})
-    async updateCat(@Body() updateCat: CategoryDto): Promise<DbModifyResult> {
-        return <DbModifyResult> await this.mysqlService.updateOne(UPDATETXT.CATEGORY, [updateCat.categoryTypeId, updateCat.categoryName, updateCat.lastModifiedById, updateCat.id]);
-    }
+  /************************************************************/
+  /* category-type                                            */
+  /************************************************************/
+  @Get('category-type')
+  @ApiOperation({ summary: 'Get all Category Types' })
+  @ApiTags(`${ADMINDBTAG}:category-type`)
+  async getCatTypes(): Promise<CategoryTypeDto[]> {
+    return this.databaseService.getAllCategoryTypes();
+  }
 
-    @Delete('category/:id')
-    @ApiOperation({ summary: 'Delete existing Category by ID' })
-    @ApiTags(`${ADMINDBTAG}:category`)
-    @ApiParam({ name: 'id', description: 'ID of Category to delete' })
-    async deleteCat(@Param('id') id: number): Promise<DbModifyResult> {
-        return <DbModifyResult> await this.mysqlService.deleteOne(DELTXT.CATEGORY, [ id ]);
-    }
+  @Get('category-type/:id')
+  @ApiOperation({ summary: 'Get Category Type by ID' })
+  @ApiTags(`${ADMINDBTAG}:category-type`)
+  @ApiParam({ name: 'id', description: 'ID of Category Type to find' })
+  async getCatType(@Param('id') id: number): Promise<CategoryTypeDto> {
+    return this.databaseService.getCategoryTypeById(id);
+  }
 
-    /************************************************************/
-    /* subcategory                                            */
-    /************************************************************/
-    @Get('subcategory')
-    @ApiOperation({ summary: 'Get all SubCategories' })
-    @ApiTags(`${ADMINDBTAG}:subcategory`)
-    async getSubCats(): Promise<SubCategoryDto[]> {
-        return <SubCategoryDto[]> await this.mysqlService.findAll(SELECTTXT.SUBCATEGORIES, []);
-    }
+  @Post('category-type')
+  @ApiOperation({ summary: 'Post new Category Type' })
+  @ApiTags(`${ADMINDBTAG}:category-type`)
+  @ApiBody({ type: CategoryTypeDto })
+  async postCatType(
+    @Body() createCatType: CategoryTypeDto,
+  ): Promise<CategoryTypeDto> {
+    return this.databaseService.insertCategoryType(createCatType);
+  }
 
-    @Get('subcategory/categoryid')
-    @ApiOperation( { summary: 'Get SubCategory by Category ID'})
-    @ApiTags(`${ADMINDBTAG}:subcategory`)
-    @ApiParam({ name: 'categoryid', description: 'ID of Category to find' })
-    async getSubCatsByCat(@Param('categoryid') categoryId: number): Promise<SubCategoryDto[]> {
-        return <SubCategoryDto[]> await this.mysqlService.findAll(SELECTTXT.SUBCATEGORIESBYCAT, [categoryId]);
+  @Put('category-type')
+  @ApiOperation({ summary: 'Update existing Category Type' })
+  @ApiTags(`${ADMINDBTAG}:category-type`)
+  @ApiBody({ type: CategoryTypeDto })
+  async updateCatType(
+    @Body() updateCatType: CategoryTypeDto,
+  ): Promise<boolean> {
+    return this.databaseService.updateCategoryTypeById(updateCatType);
+  }
 
-    }
-    
-    @Get('subcategory/:id')
-    @ApiOperation( { summary: 'Get SubCategory by ID'})
-    @ApiTags(`${ADMINDBTAG}:subcategory`)
-    @ApiParam({ name: 'id', description: 'ID of SubCategory to find' })
-    async getSubCat(@Param('id') id: number): Promise<SubCategoryDto> {
-        const result: SubCategoryDto[] = <SubCategoryDto[]> await this.mysqlService.findOneById(SELECTTXT.SUBCATEGORY, id);
-        return result[0];
-    }
-    
+  @Delete('category-type/:id')
+  @ApiOperation({ summary: 'Delete existing Category Type by ID' })
+  @ApiTags(`${ADMINDBTAG}:category-type`)
+  @ApiParam({ name: 'id', description: 'ID of Category Type to delete' })
+  async deleteCatType(@Param('id') id: number): Promise<boolean> {
+    return this.databaseService.deleteCategoryTypeById(id);
+  }
 
-    @Post('subcategory')
-    @ApiOperation({ summary: 'Post new SubCategory' })
-    @ApiTags(`${ADMINDBTAG}:subcategory`)
-    @ApiBody({ type: SubCategoryDto })
-    async postSubCat(@Body() createSubCat: SubCategoryDto): Promise<DbModifyResult> {
-        return <DbModifyResult> await this.mysqlService.insertOne(INSERTTXT.SUBCATEGORY, [createSubCat.subcategoryName, createSubCat.categoryId, createSubCat.createdById, createSubCat.lastModifiedById]);
-    }
+  /************************************************************/
+  /* category                                            */
+  /************************************************************/
+  @Get('category')
+  @ApiOperation({ summary: 'Get all Categories' })
+  @ApiTags(`${ADMINDBTAG}:category`)
+  async getCats(): Promise<CategoryDto[]> {
+    return this.databaseService.getAllCategories();
+  }
 
-    @Put('subcategory')
-    @ApiOperation({ summary: 'Update existing SubCategory' })
-    @ApiTags(`${ADMINDBTAG}:subcategory`)
-    @ApiBody({type: SubCategoryDto})
-    async updateSubCat(@Body() updateSubCat: SubCategoryDto): Promise<DbModifyResult> {
-        return <DbModifyResult> await this.mysqlService.updateOne(UPDATETXT.CATEGORY, [updateSubCat.subcategoryName, updateSubCat.categoryId, updateSubCat.lastModifiedById, updateSubCat.id]);
-    }
+  @Get('category/:id')
+  @ApiOperation({ summary: 'Get Category by ID' })
+  @ApiTags(`${ADMINDBTAG}:category`)
+  @ApiParam({ name: 'id', description: 'ID of Category to find' })
+  async getCat(@Param('id') id: number): Promise<CategoryDto> {
+    return this.databaseService.getCategoryById(id);
+  }
 
-    @Delete('subcategory/:id')
-    @ApiOperation({ summary: 'Delete existing SubCategory by ID' })
-    @ApiTags(`${ADMINDBTAG}:subcategory`)
-    @ApiParam({ name: 'id', description: 'ID of SubCategory to delete' })
-    async deleteSubCat(@Param('id') id: number): Promise<DbModifyResult> {
-        return <DbModifyResult> await this.mysqlService.deleteOne(DELTXT.SUBCATEGORY, [ id ]);
-    }
+  @Post('category')
+  @ApiOperation({ summary: 'Post new Category' })
+  @ApiTags(`${ADMINDBTAG}:category`)
+  @ApiBody({ type: CategoryDto })
+  async postCat(@Body() createCat: CategoryDto): Promise<CategoryDto> {
+    return this.databaseService.insertCategory(createCat);
+  }
 
-    /************************************************************/
-    /* payee                                                    */
-    /************************************************************/
-    @Get('payee')
-    @ApiOperation({ summary: 'Get all Payee' })
-    @ApiTags(`${ADMINDBTAG}:payee`)
-    async getPayees(): Promise<PayeeDto[]> {
-        return <PayeeDto[]> await this.mysqlService.findAll(SELECTTXT.PAYEES, []);
-    }
-    
-    @Get('payee/:id')
-    @ApiOperation( { summary: 'Get Payee by ID'})
-    @ApiTags(`${ADMINDBTAG}:payee`)
-    @ApiParam({ name: 'id', description: 'ID of Payee to find' })
-    async getPayee(@Param('id') id: number): Promise<PayeeDto> {
-        const result: PayeeDto[] = <PayeeDto[]> await this.mysqlService.findOneById(SELECTTXT.PAYEE, id);
-        return result[0];
-    }
-    
+  @Put('category')
+  @ApiOperation({ summary: 'Update existing Category' })
+  @ApiTags(`${ADMINDBTAG}:category`)
+  @ApiBody({ type: CategoryDto })
+  async updateCat(@Body() updateCategoryDto: CategoryDto): Promise<boolean> {
+    return this.databaseService.updateCategoryById(updateCategoryDto);
+  }
 
-    @Post('payee')
-    @ApiOperation({ summary: 'Post new Payee' })
-    @ApiTags(`${ADMINDBTAG}:payee`)
-    @ApiBody({ type: PayeeDto })
-    async postPayee(@Body() createPayee: PayeeDto): Promise<DbModifyResult> {
-        return <DbModifyResult> await this.mysqlService.insertOne(INSERTTXT.PAYEE, [createPayee.payeeName, createPayee.defaultSubCategoryId, createPayee.createdById, createPayee.lastModifiedById]);
-    }
+  @Delete('category/:id')
+  @ApiOperation({ summary: 'Delete existing Category by ID' })
+  @ApiTags(`${ADMINDBTAG}:category`)
+  @ApiParam({ name: 'id', description: 'ID of Category to delete' })
+  async deleteCat(@Param('id') id: number): Promise<boolean> {
+    return this.databaseService.deleteCategoryById(id);
+  }
 
-    @Put('payee')
-    @ApiOperation({ summary: 'Update existing Payee' })
-    @ApiTags(`${ADMINDBTAG}:payee`)
-    @ApiBody({type: PayeeDto})
-    async updatePayee(@Body() updatePayee: PayeeDto): Promise<DbModifyResult> {
-        return <DbModifyResult> await this.mysqlService.updateOne(UPDATETXT.PAYEE, [updatePayee.payeeName, updatePayee.defaultSubCategoryId, updatePayee.lastModifiedById, updatePayee.id]);
-    }
+  /************************************************************/
+  /* subcategory                                            */
+  /************************************************************/
+  @Get('subcategory')
+  @ApiOperation({ summary: 'Get all SubCategories' })
+  @ApiTags(`${ADMINDBTAG}:subcategory`)
+  async getSubCats(): Promise<SubCategoryDto[]> {
+    return this.databaseService.getAllSubcategories();
+  }
 
-    @Delete('payee/:id')
-    @ApiOperation({ summary: 'Delete existing Payee by ID' })
-    @ApiTags(`${ADMINDBTAG}:payee`)
-    @ApiParam({ name: 'id', description: 'ID of Payee to delete' })
-    async deletePayee(@Param('id') id: number): Promise<DbModifyResult> {
-        return <DbModifyResult> await this.mysqlService.deleteOne(DELTXT.PAYEE, [ id ]);
-    }
+  @Get('subcategory/categoryid')
+  @ApiOperation({ summary: 'Get SubCategory by Category ID' })
+  @ApiTags(`${ADMINDBTAG}:subcategory`)
+  @ApiParam({ name: 'categoryid', description: 'ID of Category to find' })
+  async getSubCatsByCat(
+    @Param('categoryid') categoryId: number,
+  ): Promise<SubCategoryDto[]> {
+    return this.databaseService.getSubcategoriesByCategory(categoryId);
+  }
 
-    /************************************************************/
-    /* transaction                                              */
-    /************************************************************/
-    @Post('transaction')
-    @ApiOperation({ summary: 'Post imported transaction '})
-    @ApiTags(`${ADMINDBTAG}:transaction`)
-    @ApiBody({ type: CreateTransactionDto })
-    async postImportedTransaction(@Body() createTransactionDto: CreateTransactionDto): Promise<DbModifyResult> {
-        return <DbModifyResult> await this.mysqlService.insertOne(INSERTTXT['IMPORT-TRASACTION'], [createTransactionDto.tenantId, createTransactionDto.transactionAmount, createTransactionDto.transactionDate, 'I', createTransactionDto.payeeName, createTransactionDto.createdByUserName, createTransactionDto.transactionTypeName])
-    }
+  @Get('subcategory/:id')
+  @ApiOperation({ summary: 'Get SubCategory by ID' })
+  @ApiTags(`${ADMINDBTAG}:subcategory`)
+  @ApiParam({ name: 'id', description: 'ID of SubCategory to find' })
+  async getSubCategoryById(@Param('id') id: number): Promise<SubCategoryDto> {
+    return this.databaseService.getSubCategoryById(id);
+  }
 
+  @Post('subcategory')
+  @ApiOperation({ summary: 'Post new SubCategory' })
+  @ApiTags(`${ADMINDBTAG}:subcategory`)
+  @ApiBody({ type: SubCategoryDto })
+  async postSubCat(
+    @Body() createSubCat: SubCategoryDto,
+  ): Promise<SubCategoryDto> {
+    return this.databaseService.insertSubCategory(createSubCat);
+  }
+
+  @Put('subcategory')
+  @ApiOperation({ summary: 'Update existing SubCategory' })
+  @ApiTags(`${ADMINDBTAG}:subcategory`)
+  @ApiBody({ type: SubCategoryDto })
+  async updateSubCat(@Body() updateSubCat: SubCategoryDto): Promise<boolean> {
+    return this.databaseService.updateSubCategoryById(updateSubCat);
+  }
+
+  @Delete('subcategory/:id')
+  @ApiOperation({ summary: 'Delete existing SubCategory by ID' })
+  @ApiTags(`${ADMINDBTAG}:subcategory`)
+  @ApiParam({ name: 'id', description: 'ID of SubCategory to delete' })
+  async deleteSubCat(@Param('id') id: number): Promise<boolean> {
+    return this.databaseService.deleteSubCategoryById(id);
+  }
+
+  /************************************************************/
+  /* payee                                                    */
+  /************************************************************/
+  @Get('payee')
+  @ApiOperation({ summary: 'Get all Payee' })
+  @ApiTags(`${ADMINDBTAG}:payee`)
+  async getPayees(): Promise<PayeeDto[]> {
+    return this.databaseService.getAllPayees();
+  }
+
+  @Get('payee/:id')
+  @ApiOperation({ summary: 'Get Payee by ID' })
+  @ApiTags(`${ADMINDBTAG}:payee`)
+  @ApiParam({ name: 'id', description: 'ID of Payee to find' })
+  async getPayee(@Param('id') id: number): Promise<PayeeDto> {
+    return this.databaseService.getPayeeById(id);
+  }
+
+  @Post('payee')
+  @ApiOperation({ summary: 'Post new Payee' })
+  @ApiTags(`${ADMINDBTAG}:payee`)
+  @ApiBody({ type: PayeeDto })
+  async postPayee(@Body() createPayee: PayeeDto): Promise<PayeeDto> {
+    return this.databaseService.insertPayee(createPayee);
+  }
+
+  @Put('payee')
+  @ApiOperation({ summary: 'Update existing Payee' })
+  @ApiTags(`${ADMINDBTAG}:payee`)
+  @ApiBody({ type: PayeeDto })
+  async updatePayee(@Body() updatePayeeDto: PayeeDto): Promise<boolean> {
+    return this.databaseService.updatePayeeById(updatePayeeDto);
+  }
+
+  @Delete('payee/:id')
+  @ApiOperation({ summary: 'Delete existing Payee by ID' })
+  @ApiTags(`${ADMINDBTAG}:payee`)
+  @ApiParam({ name: 'id', description: 'ID of Payee to delete' })
+  async deletePayee(@Param('id') id: number): Promise<boolean> {
+    return this.databaseService.deletePayeeById(id);
+  }
+
+  /************************************************************/
+  /* payee mapping                                            */
+  /************************************************************/
+  @Get('payee-mapping')
+  @ApiOperation({ summary: 'Get all Payee Mappings' })
+  @ApiTags(`${ADMINDBTAG}:payee`)
+  async getPayeeMappings(): Promise<PayeeMappingDto[]> {
+    return this.databaseService.getAllPayeeMappings();
+  }
+
+  @Get('payee-mapping/:id')
+  @ApiOperation({ summary: 'Get Payee Mapping by ID' })
+  @ApiTags(`${ADMINDBTAG}:payee-mapping`)
+  @ApiParam({ name: 'id', description: 'ID of Payee Map to find' })
+  async getPayeeMap(@Param('id') id: number): Promise<PayeeMappingDto> {
+    return this.databaseService.getPayeeMapById(id);
+  }
+
+  @Get('payee-mapping/:payeeId')
+  @ApiOperation({ summary: 'Get' })
+  @ApiTags(`${ADMINDBTAG}:payee-mapping`)
+  @ApiParam({
+    name: 'payeeId',
+    description: 'ID of Payee to find all mappings for',
+  })
+  async getPayeeMapByPayee(
+    @Param('payeeId') payeeId: number,
+  ): Promise<PayeeMappingDto[]> {
+    return this.databaseService.getPayeeMapByPayee(payeeId);
+  }
+
+  @Post('payee-mapping')
+  @ApiOperation({ summary: 'Post new Payee' })
+  @ApiTags(`${ADMINDBTAG}:payee`)
+  @ApiBody({ type: PayeeMappingDto })
+  async postPayeeMap(
+    @Body() createPayeeMap: PayeeMappingDto,
+  ): Promise<PayeeMappingDto> {
+    return this.databaseService.insertPayeeMap(createPayeeMap);
+  }
+
+  @Put('payee-mapping')
+  @ApiOperation({ summary: 'Update existing Payee' })
+  @ApiTags(`${ADMINDBTAG}:payee`)
+  @ApiBody({ type: PayeeDto })
+  async updatePayeeMapById(@Body() updatePayeeDto: PayeeDto): Promise<boolean> {
+    return this.databaseService.updatePayeeById(updatePayeeDto);
+  }
+
+  @Delete('payee-mapping/:id')
+  @ApiOperation({ summary: 'Delete existing Payee by ID' })
+  @ApiTags(`${ADMINDBTAG}:payee`)
+  @ApiParam({ name: 'id', description: 'ID of Payee to delete' })
+  async deletePayeeMapById(@Param('id') id: number): Promise<boolean> {
+    return this.databaseService.deletePayeeById(id);
+  }
 }

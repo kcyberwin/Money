@@ -1,24 +1,24 @@
-import { ApiProperty } from "@nestjs/swagger";
+import { ApiProperty } from '@nestjs/swagger';
 
 export class DbModifyResult {
-    @ApiProperty()
-    fieldCount: number;
+  @ApiProperty()
+  fieldCount: number;
 
-    @ApiProperty()
-    affectedRows: number;
+  @ApiProperty()
+  affectedRows: number;
 
-    @ApiProperty()
-    insertId: number;
-    
-    @ApiProperty()
-    info: string;
+  @ApiProperty()
+  insertId: number;
 
-    @ApiProperty()
-    serverStatus: number;
+  @ApiProperty()
+  info: string;
 
-    @ApiProperty()
-    warningStatus: number;
+  @ApiProperty()
+  serverStatus: number;
 
-    @ApiProperty()
-    changedRows: number;
+  @ApiProperty()
+  warningStatus: number;
+
+  @ApiProperty()
+  changedRows: number;
 }

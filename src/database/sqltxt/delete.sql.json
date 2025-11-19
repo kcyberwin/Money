@@ -9,5 +9,6 @@
     "CATEGORY-TYPE": "DELETE FROM category_type WHERE id = ?",
     "CATEGORY": "DELETE FROM category WHERE id = ?",
     "SUBCATEGORY": "DELETE FROM subcategory WHERE id = ?",
-    "PAYEE": "DELETE FROM payee WHERE id = ?"
+    "PAYEE": "DELETE FROM payee WHERE id = ?",
+    "PAYEE-MAPPING": "DELETE FROM payee_import_mapping WHERE id = ?"
 }

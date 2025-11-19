@@ -1,25 +1,31 @@
-import { ApiProperty } from "@nestjs/swagger";
+import { ApiProperty } from '@nestjs/swagger';
 
 export class AccountDto {
-    @ApiProperty()
-    id: number;
+  @ApiProperty({ required: false })
+  id?: number;
 
-    @ApiProperty()
-    displayName: string;
+  @ApiProperty({ default: '' })
+  accountNum: string;
 
-    @ApiProperty()
-    accountTypeId: number;
+  @ApiProperty()
+  displayName: string;
 
-    @ApiProperty()
-    tenantId: number;
+  @ApiProperty()
+  accountTypeId: number;
 
-    @ApiProperty()
-    bankId: number;
+  @ApiProperty()
+  tenantId: number;
 
-    @ApiProperty()
-    createdById: number;
+  @ApiProperty()
+  bankId: number;
 
-    @ApiProperty()
-    lastModifiedById: number;
+  @ApiProperty()
+  createdById: number;
 
+  @ApiProperty()
+  lastModifiedById: number;
+
+  toString(): string {
+    return `<ACCOUNT> ID: ${this.id}, displayName: ${this.displayName}, tenanaId: ${this.tenantId}, bankId: ${this.bankId}`;
+  }
 }
